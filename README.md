@@ -14,7 +14,6 @@ Claude (claude.ai)
       ▼
  Datameter                 ← logs every query, tracks cost
       │
-      ├── Supabase ────────► Postgres warehouse
       └── Databricks ──────► Databricks SQL warehouse
 ```
 
@@ -66,23 +65,37 @@ curl https://mcp.yourcompany.com/health
 
 ## Environment variables
 
+**Query execution**
+
 | Variable | Required | Description |
 |---|---|---|
-| `BACKEND` | Yes | Query execution backend: `supabase` or `databricks` |
-| `SUPABASE_URL` | Supabase | Your project URL (`https://xyz.supabase.co`) |
-| `SUPABASE_SERVICE_KEY` | Supabase | Service role key (not the anon key) |
-| `SUPABASE_DB_URL` | Recommended | Direct Postgres connection string — required for arbitrary SQL including COUNT queries. Format: `postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres` |
-| `DATABRICKS_HOST` | Databricks | Workspace URL (`https://your-workspace.azuredatabricks.net`) |
-| `DATABRICKS_TOKEN` | Databricks | Personal access token |
-| `DATABRICKS_WAREHOUSE_ID` | Databricks | SQL warehouse ID |
+| `BACKEND` | Yes | Query execution backend. Currently: `databricks` |
+| `DATABRICKS_HOST` | Yes | Workspace URL (`https://your-workspace.azuredatabricks.net`) |
+| `DATABRICKS_TOKEN` | Yes | Personal access token |
+| `DATABRICKS_WAREHOUSE_ID` | Yes | SQL warehouse ID |
+
+**Logging**
+
+| Variable | Required | Description |
+|---|---|---|
 | `LOG_BACKEND` | Yes | Where to write query logs: `file`, `supabase`, `postgres`, or `databricks` |
-| `SUPABASE_LOG_URL` | Supabase logging | Defaults to `SUPABASE_URL` if not set |
-| `SUPABASE_LOG_KEY` | Supabase logging | Defaults to `SUPABASE_SERVICE_KEY` if not set |
+| `SUPABASE_LOG_URL` | Supabase logging | Supabase project URL for log writes |
+| `SUPABASE_LOG_KEY` | Supabase logging | Supabase service role key for log writes |
 | `POSTGRES_LOG_URL` | Postgres logging | Connection string for a Postgres log table |
 | `DATABRICKS_LOG_CATALOG` | Databricks logging | Unity Catalog name |
 | `DATABRICKS_LOG_SCHEMA` | Databricks logging | Schema name |
 | `DATABRICKS_LOG_TABLE` | Databricks logging | Table name |
+
+**Security**
+
+| Variable | Required | Description |
+|---|---|---|
 | `WEBHOOK_SECRET` | No | If set, all MCP requests must include `Authorization: Bearer <secret>` |
+
+**Server**
+
+| Variable | Required | Description |
+|---|---|---|
 | `HOST` | No | Public base URL of this service (e.g. `https://mcp.yourcompany.com`). Used in OAuth metadata and startup logs. Defaults to `http://localhost:3000` |
 | `PORT` | No | Port to listen on. Defaults to `3000` |
 
@@ -103,8 +116,7 @@ Claude sees three tools:
 ## Supported backends
 
 **Query execution**
-- Databricks — uses the Databricks Statement Execution API
-- Supabase — uses the direct Postgres connection (`SUPABASE_DB_URL`) for full SQL support, falls back to the REST API if not set. Recommended for development and testing environments only.
+- Databricks — uses the Databricks Statement Execution API. Snowflake and BigQuery on the roadmap.
 
 **Logging**
 - `file` — JSON log written to `./data/queries.log` (persisted via Docker volume)

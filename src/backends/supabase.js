@@ -1,16 +1,33 @@
 'use strict';
 const { createClient } = require('@supabase/supabase-js');
-let client = null;
-function getClient() {
-  if (client) return client;
+const { Pool } = require('pg');
+let supabaseClient = null;
+let pgPool = null;
+function getPool() {
+  if (pgPool) return pgPool;
+  pgPool = new Pool({ connectionString: process.env.SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } });
+  return pgPool;
+}
+function getSBClient() {
+  if (supabaseClient) return supabaseClient;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY must be set');
-  client = createClient(url, key);
-  return client;
+  supabaseClient = createClient(url, key);
+  return supabaseClient;
 }
-async function executeSQL(sql) {
-  const sb = getClient();
+async function executeSQLviaPg(sql) {
+  const start = Date.now();
+  const pool = getPool();
+  try {
+    const result = await pool.query(sql);
+    return { ok: true, rows: result.rows, rowCount: result.rowCount ?? result.rows.length, durationMs: Date.now() - start };
+  } catch (err) {
+    return { ok: false, error: err.message, rows: [], rowCount: 0, durationMs: Date.now() - start };
+  }
+}
+async function executeSQLviaRest(sql) {
+  const sb = getSBClient();
   const start = Date.now();
   try {
     const match = sql.match(/FROM\s+(\w+)/i);
@@ -24,5 +41,8 @@ async function executeSQL(sql) {
   } catch (err) {
     return { ok: false, error: err.message, rows: [], rowCount: 0, durationMs: Date.now() - start };
   }
+}
+async function executeSQL(sql) {
+  return process.env.SUPABASE_DB_URL ? executeSQLviaPg(sql) : executeSQLviaRest(sql);
 }
 module.exports = { executeSQL };

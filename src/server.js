@@ -10,6 +10,7 @@ const { z } = require('zod');
 const backend = require('./backends');
 const { logQuery, getReport } = require('./loggers');
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || `http://localhost:${PORT}`;
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || null;
 const pendingResults = new Map();
 function checkAuth(req) {
@@ -71,7 +72,38 @@ async function main() {
       res.end(JSON.stringify({ status: 'ok', service: 'mcp-govern', backend: process.env.BACKEND || 'supabase', log_backend: process.env.LOG_BACKEND || 'file' }));
       return;
     }
-    if (!req.url.startsWith('/mcp') && req.url !== '/') { res.writeHead(404); res.end('Not found'); return; }
+    if (req.method === 'GET' && req.url === '/.well-known/oauth-authorization-server') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        issuer: HOST,
+        authorization_endpoint: `${HOST}/oauth/authorize`,
+        token_endpoint: `${HOST}/oauth/token`,
+        response_types_supported: ['code'],
+        grant_types_supported: ['authorization_code'],
+        token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic'],
+        code_challenge_methods_supported: ['S256', 'plain'],
+      }));
+      return;
+    }
+    if (req.method === 'GET' && req.url.startsWith('/oauth/authorize')) {
+      const url = new URL(req.url, HOST);
+      const redirectUri = url.searchParams.get('redirect_uri');
+      const state = url.searchParams.get('state');
+      if (!redirectUri) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'missing redirect_uri' })); return; }
+      const dest = new URL(redirectUri);
+      dest.searchParams.set('code', `code_${Date.now()}`);
+      if (state) dest.searchParams.set('state', state);
+      res.writeHead(302, { Location: dest.toString() });
+      res.end();
+      return;
+    }
+    if (req.method === 'POST' && req.url === '/oauth/token') {
+      const accessToken = WEBHOOK_SECRET || 'mcp-govern-token';
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ access_token: accessToken, token_type: 'bearer', expires_in: 3600 }));
+      return;
+    }
+    if (!req.url.startsWith('/mcp') && !req.url.startsWith('/oauth') && req.url !== '/') { res.writeHead(404); res.end('Not found'); return; }
     if (!checkAuth(req)) { res.writeHead(401, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Unauthorized' })); return; }
     const body = await bodyOf(req);
     const mcpServer = createMcpServer();
@@ -81,7 +113,7 @@ async function main() {
     await transport.handleRequest(req, res, body);
   });
   httpServer.listen(PORT, () => {
-    console.log(`mcp-govern running\n  Endpoint: http://localhost:${PORT}/mcp\n  Health:   http://localhost:${PORT}/health\n  Backend:  ${process.env.BACKEND || 'supabase'}\n  Logs:     ${process.env.LOG_BACKEND || 'file'}\n  Auth:     ${WEBHOOK_SECRET ? 'enabled' : 'disabled'}`);
+    console.log(`mcp-govern running\n  Endpoint: ${HOST}/mcp\n  Health:   ${HOST}/health\n  OAuth:    ${HOST}/oauth/authorize  ${HOST}/oauth/token\n  Metadata: ${HOST}/.well-known/oauth-authorization-server\n  Backend:  ${process.env.BACKEND || 'supabase'}\n  Logs:     ${process.env.LOG_BACKEND || 'file'}\n  Auth:     ${WEBHOOK_SECRET ? 'enabled' : 'disabled'}`);
   });
 }
 main().catch(err => { console.error('Fatal:', err); process.exit(1); });

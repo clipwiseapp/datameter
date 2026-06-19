@@ -43,22 +43,22 @@ Edit `.env` with your values (see table below).
 - Create a new service → Docker Compose
 - Point it at this repo
 - Paste your env vars into the Environment section
-- Set the domain (e.g. `mcp.yourcompany.com`) and enable HTTPS
+- Set the domain (e.g. `datameter.yourcompany.com`) and enable HTTPS
 - Deploy
 
 **4. Connect Claude**
 
 In Claude.ai → Settings → Integrations → Add custom connector:
 
-- MCP endpoint: `https://mcp.yourcompany.com/mcp`
-- OAuth authorization URL: `https://mcp.yourcompany.com/oauth/authorize`
-- OAuth token URL: `https://mcp.yourcompany.com/oauth/token`
+- MCP endpoint: `https://datameter.yourcompany.com/mcp`
+- OAuth authorization URL: `https://datameter.yourcompany.com/oauth/authorize`
+- OAuth token URL: `https://datameter.yourcompany.com/oauth/token`
 - If `WEBHOOK_SECRET` is set, the OAuth flow will issue it as the bearer token automatically
 
 **5. Verify**
 
 ```bash
-curl https://mcp.yourcompany.com/health
+curl https://datameter.yourcompany.com/health
 ```
 
 ---
@@ -96,7 +96,7 @@ curl https://mcp.yourcompany.com/health
 
 | Variable | Required | Description |
 |---|---|---|
-| `HOST` | No | Public base URL of this service (e.g. `https://mcp.yourcompany.com`). Used in OAuth metadata and startup logs. Defaults to `http://localhost:3000` |
+| `HOST` | No | Public base URL of this service (e.g. `https://datameter.yourcompany.com`). Used in OAuth metadata and startup logs. Defaults to `http://localhost:3000` |
 | `PORT` | No | Port to listen on. Defaults to `3000` |
 
 ---
@@ -119,10 +119,12 @@ Claude sees three tools:
 - Databricks — uses the Databricks Statement Execution API. Snowflake and BigQuery on the roadmap.
 
 **Logging**
-- `file` — JSON log written to `./data/queries.log` (persisted via Docker volume)
-- `supabase` — inserts into a `query_logs` table in your Supabase project
-- `postgres` — inserts into a `query_logs` table via direct connection
 - `databricks` — appends to a Delta table in Unity Catalog
+- `bigquery` — _(roadmap)_
+- `snowflake` — _(roadmap)_
+- `postgres` — inserts into a `query_logs` table via direct connection
+- `supabase` — inserts into a `query_logs` table in your Supabase project
+- `file` — JSON log written to `./data/queries.log` (persisted via Docker volume)
 
 ---
 

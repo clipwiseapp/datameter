@@ -34,6 +34,20 @@ function buildEntry({ toolName, sqlText, durationMs, rowsReturned, error }) {
     error:          error || null,
   };
 }
+function hourLabel(h) {
+  if (h === 0)  return '12am';
+  if (h < 12)   return `${h}am`;
+  if (h === 12) return '12pm';
+  return `${h - 12}pm`;
+}
+function extractTables(sql) {
+  if (!sql) return [];
+  const tables = [];
+  const re = /\b(?:FROM|JOIN)\s+([\w.]+)/gi;
+  let m;
+  while ((m = re.exec(sql)) !== null) tables.push(m[1].toLowerCase());
+  return tables;
+}
 function formatReport(entries, period) {
   const successful = entries.filter(e => !e.error);
   const total      = successful.reduce((s, e) => s + (e.estimated_cost || 0), 0);
@@ -69,8 +83,45 @@ function formatReport(entries, period) {
   } else {
     cache.forEach(([sql, count]) => {
       const totalCost = successful.filter(e => e.sql_text === sql).reduce((s, e) => s + (e.estimated_cost || 0), 0);
-      lines.push(`- Run **${count}×** · Total cost: $${totalCost.toFixed(4)}`);
+      const priority  = count >= 5 ? ' 🔴 HIGH PRIORITY' : '';
+      lines.push(`- Run **${count}×** · Estimated savings: $${totalCost.toFixed(4)}${priority}`);
       lines.push(`  \`${sql.slice(0, 80)}\``);
+    });
+  }
+  // Cost by hour of day
+  const hourMap = {};
+  successful.forEach(e => {
+    if (!e.timestamp) return;
+    const h = new Date(e.timestamp).getHours();
+    if (!hourMap[h]) hourMap[h] = { cost: 0, count: 0 };
+    hourMap[h].cost  += e.estimated_cost || 0;
+    hourMap[h].count += 1;
+  });
+  const topHours = Object.entries(hourMap).sort((a, b) => b[1].cost - a[1].cost).slice(0, 5);
+  lines.push('', '### Cost by hour of day (top 5)');
+  if (!topHours.length) {
+    lines.push('No data yet.');
+  } else {
+    topHours.forEach(([h, { cost, count }]) => {
+      lines.push(`- **${hourLabel(Number(h))}** — $${cost.toFixed(4)} (${count} quer${count === 1 ? 'y' : 'ies'})`);
+    });
+  }
+  // Most expensive tables
+  const tableMap = {};
+  successful.forEach(e => {
+    extractTables(e.sql_text).forEach(t => {
+      if (!tableMap[t]) tableMap[t] = { cost: 0, count: 0 };
+      tableMap[t].cost  += e.estimated_cost || 0;
+      tableMap[t].count += 1;
+    });
+  });
+  const topTables = Object.entries(tableMap).sort((a, b) => b[1].cost - a[1].cost).slice(0, 5);
+  lines.push('', '### Most expensive tables (top 5)');
+  if (!topTables.length) {
+    lines.push('No table references found.');
+  } else {
+    topTables.forEach(([table, { cost, count }]) => {
+      lines.push(`- **${table}** — $${cost.toFixed(4)} (${count} quer${count === 1 ? 'y' : 'ies'})`);
     });
   }
   return lines.join('\n');

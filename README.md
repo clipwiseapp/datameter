@@ -26,7 +26,7 @@ Claude connects via the MCP protocol. Datameter executes the query against your 
 **1. Clone the repo**
 
 ```bash
-git clone https://github.com/jdb2b/datameter.git
+git clone https://github.com/clipwiseapp/datameter.git
 cd datameter
 ```
 

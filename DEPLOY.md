@@ -2,7 +2,7 @@
 
 ## 1. Fork the repo
 
-Fork [github.com/jdb2b/datameter](https://github.com/jdb2b/datameter) into your own Git host (GitHub, GitLab, etc.). Deploying from your own fork means the running code is fully under your control — you can audit changes, pin to a specific commit, and merge upstream updates on your own schedule.
+Fork [github.com/clipwiseapp/datameter](https://github.com/clipwiseapp/datameter) into your own Git host (GitHub, GitLab, etc.). Deploying from your own fork means the running code is fully under your control — you can audit changes, pin to a specific commit, and merge upstream updates on your own schedule.
 
 ---
 
@@ -107,7 +107,7 @@ Datameter is under active development. To receive updates from the upstream repo
 **1. Add the upstream remote (one time only):**
 
 ```bash
-git remote add upstream https://github.com/jdb2b/datameter.git
+git remote add upstream https://github.com/clipwiseapp/datameter.git
 ```
 
 **2. When you want to pull in new features:**

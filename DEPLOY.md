@@ -26,14 +26,13 @@ BACKEND=databricks
 DATABRICKS_HOST=
 DATABRICKS_TOKEN=
 DATABRICKS_WAREHOUSE_ID=
-LOG_BACKEND=databricks
-DATABRICKS_LOG_CATALOG=governance
-DATABRICKS_LOG_SCHEMA=datameter
-DATABRICKS_LOG_TABLE=query_logs
+LOG_BACKEND=file
 WEBHOOK_SECRET=
 HOST=https://YOUR_DOMAIN
 PORT=3000
 ```
+
+`LOG_BACKEND=file` is recommended for the initial install. It writes query logs to `./data/queries.log` inside the container so you can confirm queries are flowing through before introducing a second Databricks dependency. Switch to `LOG_BACKEND=databricks` once verified (see step 6).
 
 See section 3 for where to get the credential values.
 
@@ -83,3 +82,18 @@ curl https://YOUR_DOMAIN/health
 ```
 
 Confirm the response includes `"status":"ok"`. If it doesn't, check the container logs in Coolify.
+
+---
+
+## 6. Switch to Databricks logging
+
+Once you've confirmed queries are flowing through (run a query via Claude and check `./data/queries.log` in the container), update the environment variables in Coolify to write logs to Unity Catalog instead:
+
+```
+LOG_BACKEND=databricks
+DATABRICKS_LOG_CATALOG=governance
+DATABRICKS_LOG_SCHEMA=datameter
+DATABRICKS_LOG_TABLE=query_logs
+```
+
+Redeploy. Subsequent queries will be appended to the Delta table at `governance.datameter.query_logs`.

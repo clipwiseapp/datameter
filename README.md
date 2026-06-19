@@ -78,13 +78,13 @@ curl https://datameter.yourcompany.com/health
 
 | Variable | Required | Description |
 |---|---|---|
-| `LOG_BACKEND` | Yes | Where to write query logs: `file`, `supabase`, `postgres`, or `databricks` |
-| `SUPABASE_LOG_URL` | Supabase logging | Supabase project URL for log writes |
-| `SUPABASE_LOG_KEY` | Supabase logging | Supabase service role key for log writes |
-| `POSTGRES_LOG_URL` | Postgres logging | Connection string for a Postgres log table |
+| `LOG_BACKEND` | Yes | Where to write query logs: `databricks`, `postgres`, `supabase`, or `file` |
 | `DATABRICKS_LOG_CATALOG` | Databricks logging | Unity Catalog name |
 | `DATABRICKS_LOG_SCHEMA` | Databricks logging | Schema name |
 | `DATABRICKS_LOG_TABLE` | Databricks logging | Table name |
+| `SUPABASE_LOG_URL` | Supabase logging | Supabase project URL for log writes |
+| `SUPABASE_LOG_KEY` | Supabase logging | Supabase service role key for log writes |
+| `POSTGRES_LOG_URL` | Postgres logging | Connection string for a Postgres log table |
 
 **Security**
 
